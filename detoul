@@ -112,7 +112,7 @@ save-spec() {
   stash
   (
     git checkout detoul-spec &&
-      (cat "$DETOUL_TMP/spec" | head -n -1 | grep -v "^$" > "$target" || [ 1 -eq 1 ]) &&
+      (cat "$DETOUL_TMP/spec" | awk -v n=1 'NR>n{print line[NR%n]};{line[NR%n]=$0}' | grep -v "^$" > "$target" || [ 1 -eq 1 ]) &&
       cat "$DETOUL_TMP/spec" | tail -n 1 | tr -d '\n' >> "$target" &&
       git add "$target" &&
       git commit -m "$1" $commit_opts

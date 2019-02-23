@@ -45,7 +45,7 @@ make-detoul-dependency() {
 }
 
 autocomplete() {
-  branch_name="$((git branch -a | cut -c3- ; git tag) | sed -e 's/remotes\/[[:alnum:]]\+\///g' | grep "^$1" | head -n 1)"
+  branch_name="$((git branch -a | cut -c3- ; git tag) | sed -E 's/remotes\/[[:alnum:]]+\///g' | grep "^$1" | head -n 1)"
   if [ "$branch_name" == "" ]; then
     echo "$1"
   else
@@ -54,7 +54,7 @@ autocomplete() {
 }
 
 validate-branch-name() {
-  (git branch -a | cut -c3- ; git tag) | sed -E 's|remotes\/[[:alnum:]]+\/||g' | grep -q "^$1$"
+  (git branch -a | cut -c3- ; git tag) | sed -E 's/remotes\/[[:alnum:]]+\///g' | grep -q "^$1$"
 }
 
 validate-ref-name() {
@@ -237,10 +237,10 @@ while read -r line; do
       take
       ;;
     take-merge)
-      take merge-squash "$(echo "$line" | sed -e 's/^take-merge\s\+[[:graph:]]\+\s*//')"
+      take merge-squash "$(echo "$line" | sed -E 's/^take-merge\s+[[:graph:]]+\s*//')"
       ;;
     take-squash)
-      take squash "$(echo "$line" | sed -e 's/^take-squash\s\+[[:graph:]]\+\s*//')"
+      take squash "$(echo "$line" | sed -E 's/^take-squash\s+[[:graph:]]+\s*//')"
       ;;
     pick)
       pick
