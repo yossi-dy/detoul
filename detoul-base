@@ -1,5 +1,12 @@
 #!/bin/bash
 
+COLOR_RED="$(tput setaf 1)"
+COLOR_GREEN="$(tput setaf 2)"
+COLOR_YELLOW="$(tput setaf 3)"
+COLOR_MAGENTA="$(tput setaf 5)"
+COLOR_CYAN="$(tput setaf 6)"
+COLOR_CLR="$(tput sgr0)"
+
 exit_code="0"
 first_command="1"
 
@@ -21,11 +28,11 @@ make-detoul-dependency() {
     export DETOUL_COLOR_ALWAYS="1"
     if ( detoul cat "$1" >/dev/null 2>&1 ); then
       if ( git ls-tree detoul-spec | grep -q "\s$1$" ); then
-        echo -e "Making spec '\e[92m$1\e[0m...'" &&
+        echo -e "Making spec '${COLOR_GREEN}$1${COLOR_CLR}...'" &&
           detoul make "$1" &&
           echo "0" >"$exit_code_file"
       else
-        echo -e "\e[93mWarning: there is an archived detoul spec called '\e[92m$1\e[93m'.\e[0m"
+        echo -e "${COLOR_YELLOW}Warning: there is an archived detoul spec called '${COLOR_GREEN}$1${COLOR_YELLOW}'.${COLOR_CLR}"
         echo "0" >"$exit_code_file"
       fi
     else
@@ -47,7 +54,7 @@ autocomplete() {
 }
 
 validate-branch-name() {
-  (git branch -a | cut -c3- ; git tag) | sed -e 's/remotes\/[[:alnum:]]\+\///g' | grep -q "^$1$"
+  (git branch -a | cut -c3- ; git tag) | sed -E 's|remotes\/[[:alnum:]]+\/||g' | grep -q "^$1$"
 }
 
 validate-ref-name() {
@@ -56,12 +63,12 @@ validate-ref-name() {
 
 checkout() {
   if [ "$first_command" == "1" ]; then
-    color="\e[0m"
+    color="${COLOR_CLR}"
     first_command=0
   else
-    color="\e[91m"
+    color="${COLOR_RED}"
   fi
-  echo -e "${color}Checking out\e[0m '\e[92m$branch\e[0m'..."
+  echo -e "${color}Checking out${COLOR_CLR} '${COLOR_GREEN}$branch${COLOR_CLR}'..."
   if ( (git branch ; git tag) | grep -q "\b${branch}$" ); then
     checkout_branch="$branch"
   else
@@ -130,9 +137,9 @@ take() {
     cached_commit_key="$(detoul-cache hash take $@)"
     if [ "$3" == "" ]; then
       if [ "$1" == "" ]; then
-        echo -e "Taking '\e[92m$branch\e[0m'..."
+        echo -e "Taking '${COLOR_GREEN}$branch${COLOR_CLR}'..."
       else
-        echo -e "Taking '\e[92m$branch\e[0m' (\e[96m$(echo "$1" | cut -d'-' -f1)\e[0m)..."
+        echo -e "Taking '${COLOR_GREEN}$branch${COLOR_CLR}' (${COLOR_CYAN}$(echo "$1" | cut -d'-' -f1)${COLOR_CLR})..."
       fi
       cached_commit="$(detoul-cache read "$cached_commit_key")"
       if [ $? -ne 0 ] || ! (git reset --hard "$cached_commit" >/dev/null 2>&1); then
@@ -141,7 +148,7 @@ take() {
         return
       fi
     elif [ "$3" == "refresh" ]; then
-      echo -e "\e[93mAttempting to refresh rerere cache...\e[0m" >&2
+      echo -e "${COLOR_YELLOW}Attempting to refresh rerere cache...${COLOR_CLR}" >&2
     fi
     source_branch="$(git show-ref "$branch" | cut -d' ' -f1 | head -n 1)"
     if [ "${1/squash}" != "$1" ]; then
@@ -202,7 +209,7 @@ pick() {
     branch="${command[1]}"
     checkout
   else
-    echo -e "Picking '\e[92m${command[1]}\e[0m'..."
+    echo -e "Picking '${COLOR_GREEN}${command[1]}${COLOR_CLR}'..."
     (
       git cherry-pick "${command[1]}"
     ) >/dev/null 2>&1 || fail
@@ -219,7 +226,7 @@ while read -r line; do
   export branch="$(autocomplete "${command[1]//\*/.*}")"
   (make-detoul-dependency "$branch") || fail
   if ! validate-ref-name "$branch" ; then
-    echo -e "\e[31mReference not found: '$branch'.\e[0m" >&2
+    echo -e "${COLOR_RED}Reference not found: '$branch'.${COLOR_CLR}" >&2
     fail
   fi
   case "${command[0]}" in
@@ -239,12 +246,12 @@ while read -r line; do
       pick
       ;;
     exec)
-      echo -e "\e[91mExecuting\e[0m '\e[92m${line/exec /}\e[0m'..."
+      echo -e "${COLOR_RED}Executing${COLOR_CLR} '${COLOR_GREEN}${line/exec /}${COLOR_CLR}'..."
       cd "$GIT_WD"
       bash -c "${line/exec /}" || fail
       ;;
     *)
-      echo -e "\e[31mUnknown directive '${command[0]}'.\e[0m" >&2
+      echo -e "${COLOR_RED}Unknown directive '${command[0]}'.${COLOR_CLR}" >&2
       fail
       ;;
   esac
